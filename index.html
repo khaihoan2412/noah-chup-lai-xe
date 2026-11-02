@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Chụp ảnh hồ sơ xe</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.4 system-ui,sans-serif;background:#f1f3f5;color:#212529;padding-bottom:40px}
+main{max-width:640px;margin:0 auto;padding:8px}
+header{display:flex;justify-content:space-between;align-items:center;margin:2px 2px 8px}
+h1{font-size:17px;margin:0}
+#cnt{background:#2f9e44;color:#fff;border-radius:20px;padding:4px 12px;font-weight:700;font-size:14px}
+section{background:#fff;border-radius:12px;padding:10px;margin-bottom:8px;box-shadow:0 1px 2px #0001}
+h2{font-size:12px;margin:0 0 6px;color:#495057;letter-spacing:.5px}
+label{font-size:12px;font-weight:700;color:#495057}
+input{width:100%;font-size:22px;padding:10px;border:2px solid #ced4da;border-radius:10px;margin-top:2px;text-transform:uppercase}
+input:focus{outline:none;border-color:#1c7ed6}
+#q{font-size:16px;text-transform:uppercase}
+button{font:inherit;font-weight:700;padding:12px;border:0;border-radius:10px;background:#e9ecef;color:#212529;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+.big{width:100%;padding:16px 8px;font-size:17px}
+.primary{background:#1c7ed6;color:#fff}.ok{background:#2f9e44;color:#fff}.danger{background:#e03131;color:#fff}.dark{background:#343a40;color:#fff}.cam{background:#f08c00;color:#fff}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.in2{display:grid;grid-template-columns:1fr 1.3fr;gap:8px}
+#full{margin-top:8px;font-size:20px;font-weight:800;text-align:center;letter-spacing:.5px;word-break:break-all}
+#full.bad{color:#e03131}
+.hint{font-size:13px;color:#868e96;margin-top:4px}.hint.bad{color:#e03131}
+video{width:100%;max-height:42vh;background:#000;border-radius:10px;display:block;object-fit:contain}
+.pv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.slot{border:2px solid #dee2e6;border-radius:10px;padding:6px;text-align:center}
+.slot.act{border-color:#f08c00}
+.slot .box{height:110px;background:#f1f3f5;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#adb5bd;margin:4px 0;overflow:hidden}
+.slot img{width:100%;height:100%;object-fit:contain}
+.slot small{display:block;word-break:break-all;font-size:12px;color:#495057;margin-bottom:4px}
+.slot button{width:100%;padding:8px}
+.item{display:flex;align-items:center;gap:6px;padding:8px 0;border-top:1px solid #e9ecef}
+.item .t{flex:1;min-width:0;word-break:break-all}.item .t span{display:block;font-size:12px;color:#868e96}
+.item button{padding:8px 10px;font-size:14px}
+#list{max-height:45vh;overflow:auto}
+progress{width:100%;height:14px;margin-top:8px}
+#toast{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));background:#343a40;color:#fff;padding:12px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:99;text-align:center}
+#toast.show{opacity:1}#toast.err{background:#c92a2a}
+dialog{border:0;border-radius:12px;padding:14px;max-width:94vw;width:420px}
+dialog::backdrop{background:#0008}
+#vd{width:640px}#vd img{width:100%;margin:4px 0 8px;border-radius:8px}
+#ct{margin:0 0 8px;color:#e03131}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<header><h1>🚗 Chụp ảnh hồ sơ xe</h1><span id="cnt">0 hồ sơ</span></header>
+
+<section>
+ <div class="in2">
+  <div><label for="pre">PHẦN ĐẦU BIỂN SỐ</label><input id="pre" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="47M1"></div>
+  <div><label for="suf">SỐ CUỐI</label><input id="suf" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="10" placeholder="12345"></div>
+ </div>
+ <div id="full">BIỂN SỐ: ---</div>
+ <div id="msg" class="hint" style="text-align:center"></div>
+</section>
+
+<section>
+ <div id="camBox" hidden><video id="v" playsinline muted autoplay></video>
+  <div class="row" style="margin-top:6px"><button id="flip" style="padding:8px">Đổi camera trước/sau</button><button id="closeCam" class="dark" style="padding:8px">Tắt camera</button></div></div>
+ <div id="camHint" class="hint" style="margin:0 0 6px"></div>
+ <div class="row">
+  <button id="snap" class="big cam">📷 CHỤP ẢNH</button>
+  <button id="submit" class="big ok" disabled>✓ NỘP HỒ SƠ</button>
+ </div>
+</section>
+
+<section>
+ <div class="pv">
+  <div class="slot" id="s1"><b>Ảnh 1</b><div class="box"><img id="im1" alt="" hidden><span id="em1">Chưa có</span></div><small id="nm1"></small><button id="rt1">Chụp lại</button></div>
+  <div class="slot" id="s2"><b>Ảnh 2</b><div class="box"><img id="im2" alt="" hidden><span id="em2">Chưa có</span></div><small id="nm2"></small><button id="rt2">Chụp lại</button></div>
+ </div>
+</section>
+
+<section>
+ <h2>DANH SÁCH HỒ SƠ</h2>
+ <input id="q" inputmode="search" autocomplete="off" placeholder="🔍 Tìm theo biển số">
+ <div id="stat" class="hint"></div>
+ <div id="list"></div>
+ <div id="store" class="hint"></div>
+</section>
+
+<section>
+ <button id="zip" class="primary big">TẢI TOÀN BỘ ẢNH (.ZIP)</button>
+ <progress id="pg" value="0" max="100" hidden></progress>
+ <div id="zipMsg" class="hint"></div>
+ <button id="clear" class="danger big" style="margin-top:10px">XÓA TOÀN BỘ DỮ LIỆU</button>
+</section>
+</main>
+
+<dialog id="cd"><form method="dialog">
+ <h3 id="ct"></h3><div id="cb"></div>
+ <div class="row" style="margin-top:12px"><button value="cancel" class="big">HỦY</button><button value="ok" id="cok" class="big danger"></button></div>
+</form></dialog>
+<dialog id="vd"><b id="vt"></b><div id="vi"></div><button id="vc" class="dark big">Đóng</button></dialog>
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(()=>{
+const $=i=>document.getElementById(i);
+let db,stream,facing='environment',slot=1,shots={1:null,2:null},urls={},keys=new Set(),busy=false,tt,all=[];
+
+const toast=(m,e)=>{const t=$('toast');t.textContent=m;t.className=e?'err show':'show';clearTimeout(tt);tt=setTimeout(()=>t.className='',e?6000:2200)};
+const fail=e=>toast(e&&e.name==='QuotaExceededError'?'Bộ nhớ thiết bị đã đầy! Hãy tải ZIP rồi xóa bớt dữ liệu.':'Lỗi lưu trữ: '+(e&&(e.message||e.name)||e),1);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- Chuẩn hóa biển số ---------- */
+const pre=()=>$('pre').value.toUpperCase().replace(/[^\p{L}\p{N}]/gu,'');
+const suf=()=>$('suf').value.replace(/\D/g,'');          /* giữ nguyên số 0 đầu (dạng chuỗi) */
+const plate=()=>pre()&&suf()?pre()+'-'+suf():'';
+
+/* ---------- IndexedDB ---------- */
+function openDB(){return new Promise((ok,no)=>{
+ if(!window.indexedDB)return no(new Error('Trình duyệt không hỗ trợ IndexedDB'));
+ const r=indexedDB.open('hoSoXe',1);
+ r.onupgradeneeded=()=>{r.result.createObjectStore('pairs',{keyPath:'key'});r.result.createObjectStore('draft',{keyPath:'id'})};
+ r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}
+function tx(store,mode,fn){return new Promise((ok,no)=>{
+ const t=db.transaction(store,mode);let out;const rq=fn(t.objectStore(store));
+ if(rq)rq.onsuccess=()=>out=rq.result;
+ t.oncomplete=()=>ok(out);t.onerror=()=>no(t.error);t.onabort=()=>no(t.error)})}
+const saveDraft=()=>db&&tx('draft','readwrite',s=>s.put({id:'cur',pre:pre(),suf:suf(),p1:shots[1],p2:shots[2]})).catch(fail);
+
+/* ---------- Hộp thoại xác nhận ---------- */
+function ask(title,html,okTxt){return new Promise(r=>{
+ $('ct').textContent=title;$('cb').innerHTML=html;$('cok').textContent=okTxt;
+ const d=$('cd');d.returnValue='';d.onclose=()=>r(d.returnValue==='ok');d.showModal()})}
+
+/* ---------- Giao diện ---------- */
+function render(){
+ const p=plate(),dup=p&&keys.has(p);
+ const f=$('full');f.textContent='BIỂN SỐ: '+(p||(pre()||'---')+'-'+(suf()||'?????'));f.className=dup?'bad':'';
+ $('msg').textContent=dup?'⚠ Biển số này đã có trong danh sách':!pre()?'Nhập phần đầu biển số (chỉ nhập một lần)':!suf()?'Nhập số cuối biển số':'';
+ $('msg').className=dup?'hint bad':'hint';
+ for(const n of[1,2]){
+  if(urls[n]){URL.revokeObjectURL(urls[n]);urls[n]=null}
+  const im=$('im'+n);
+  if(shots[n]){urls[n]=URL.createObjectURL(shots[n]);im.src=urls[n];im.hidden=false;$('em'+n).hidden=true}
+  else{im.hidden=true;im.removeAttribute('src');$('em'+n).hidden=false}
+  $('nm'+n).textContent=(p||'BIỂNSỐ')+'-'+n+'.jpg';
+  $('s'+n).classList.toggle('act',slot===n);
+ }
+ $('submit').disabled=busy||!(p&&!dup&&shots[1]&&shots[2]);
+ $('camHint').textContent=slot?'Sẽ chụp ảnh '+slot+' → '+(p||'BIỂNSỐ')+'-'+slot+'.jpg':'Đã đủ 2 ảnh → bấm NỘP HỒ SƠ (hoặc "Chụp lại" để thay ảnh)';
+ $('snap').textContent=slot?'📷 CHỤP ẢNH '+slot:'📷 ĐÃ ĐỦ ẢNH';
+}
+async function refresh(){
+ try{all=await tx('pairs','readonly',s=>s.getAll());}catch(e){fail(e);all=[]}
+ all.sort((a,b)=>a.ts-b.ts);
+ keys=new Set(all.map(r=>r.key));
+ $('cnt').textContent=all.length+' hồ sơ';
+ drawList();render();
+ if(navigator.storage&&navigator.storage.estimate){
+  const e=await navigator.storage.estimate();
+  $('store').textContent='Đã dùng '+(e.usage/1048576).toFixed(0)+' MB / khoảng '+(e.quota/1048576).toFixed(0)+' MB cho phép';
+ }
+}
+function drawList(){
+ const q=$('q').value.toUpperCase().replace(/\s/g,''),L=$('list');
+ const rows=q?all.filter(r=>r.key.replace('-','').includes(q.replace('-',''))):all;
+ $('stat').textContent='Tổng: '+all.length+' hồ sơ • '+all.length*2+' ảnh'+(q?' • Khớp tìm kiếm: '+rows.length:'');
+ L.innerHTML=rows.length?'':'<div class="hint">'+(all.length?'Không có biển số khớp.':'Chưa có hồ sơ nào.')+'</div>';
+ for(const r of rows){
+  const d=document.createElement('div');d.className='item';
+  d.innerHTML='<div class="t"><b>'+esc(r.plate)+'</b><span>'+esc(r.plate)+'-1.jpg • '+esc(r.plate)+'-2.jpg</span></div><button data-v="'+esc(r.key)+'">Xem ảnh</button><button class="danger" data-d="'+esc(r.key)+'">Xóa</button>';
+  L.appendChild(d);
+ }
+}
+
+/* ---------- Camera ---------- */
+async function startCam(){
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('Trình duyệt không hỗ trợ camera, hoặc trang chưa chạy qua HTTPS.',1);return false}
+ stopCam(true);
+ try{
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:facing},width:{ideal:4096},height:{ideal:3072}}})}
+  catch(e){if(e.name==='OverconstrainedError')stream=await navigator.mediaDevices.getUserMedia({audio:false,video:true});else throw e}
+  $('v').srcObject=stream;await $('v').play();$('camBox').hidden=false;render();return true;
+ }catch(e){
+  stream=null;const n=e.name;
+  toast(n==='NotAllowedError'||n==='PermissionDeniedError'?'Bạn chưa cấp quyền camera. Bấm biểu tượng ổ khóa cạnh địa chỉ trang → Quyền → bật Camera, rồi thử lại.'
+   :n==='NotFoundError'||n==='OverconstrainedError'?'Không tìm thấy camera trên thiết bị.'
+   :n==='NotReadableError'?'Camera đang được ứng dụng khác sử dụng. Hãy đóng ứng dụng đó rồi thử lại.'
+   :'Không mở được camera: '+(e.message||n),1);
+  return false;
+ }
+}
+function stopCam(quiet){
+ if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+ $('v').srcObject=null;$('camBox').hidden=true;if(!quiet)render();
+}
+async function snap(){
+ if(!stream){await startCam();return}                     /* camera tắt → bấm CHỤP sẽ mở camera */
+ if(!pre()){$('pre').focus();return toast('Chưa nhập phần đầu biển số.',1)}
+ if(!suf()){$('suf').focus();return toast('Chưa nhập số cuối biển số.',1)}
+ if(!slot)return toast('Đã đủ 2 ảnh. Bấm "Chụp lại" để thay ảnh hoặc NỘP HỒ SƠ.',1);
+ const v=$('v');if(!v.videoWidth)return toast('Camera chưa sẵn sàng, thử lại sau giây lát.',1);
+ const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;
+ c.getContext('2d').drawImage(v,0,0);
+ const n=slot;
+ c.toBlob(async b=>{
+  if(!b)return toast('Không tạo được ảnh, hãy chụp lại.',1);
+  shots[n]=b;slot=!shots[1]?1:!shots[2]?2:null;
+  await saveDraft();render();
+  if(navigator.vibrate)navigator.vibrate(30);
+ },'image/jpeg',0.92);
+}
+function retake(n){slot=n;render();if(!stream)startCam()}
+
+/* ---------- Nộp / xem / xóa ---------- */
+async function submit(){
+ if(busy)return;
+ const p=plate();
+ if(!pre())return toast('Chưa nhập phần đầu biển số.',1);
+ if(!suf())return toast('Chưa nhập số cuối biển số.',1);
+ if(!shots[1]||!shots[2])return toast('Chưa chụp đủ 2 ảnh.',1);
+ if(keys.has(p))return toast('Biển số '+p+' đã tồn tại.',1);
+ busy=true;render();
+ try{await tx('pairs','readwrite',s=>s.add({key:p,plate:p,p1:shots[1],p2:shots[2],ts:Date.now()}))}
+ catch(e){busy=false;render();return e&&e.name==='ConstraintError'?toast('Biển số đã tồn tại.',1):fail(e)}   /* lỗi → KHÔNG xóa dữ liệu đang chụp */
+ shots={1:null,2:null};slot=1;$('suf').value='';busy=false;
+ await saveDraft();await refresh();
+ toast('✔ Đã nộp hồ sơ '+p);
+ $('suf').focus();
+}
+async function view(key){
+ const r=all.find(x=>x.key===key);if(!r)return;
+ $('vt').textContent=r.plate;const d=$('vi');d.innerHTML='';
+ for(const n of[1,2]){const i=new Image();i.src=URL.createObjectURL(r['p'+n]);i.alt=r.plate+'-'+n+'.jpg';d.append(r.plate+'-'+n+'.jpg',i)}
+ $('vd').showModal();
+}
+async function del(key){
+ if(!await ask('Xóa hồ sơ?','Xóa hồ sơ <b>'+esc(key)+'</b> và cả 2 ảnh? Không thể khôi phục.','XÁC NHẬN XÓA'))return;
+ try{await tx('pairs','readwrite',s=>s.delete(key))}catch(e){return fail(e)}
+ await refresh();toast('Đã xóa hồ sơ '+key);
+}
+async function clearAll(){
+ if(!await ask('⚠ CẢNH BÁO','<p>Bạn có chắc chắn muốn xóa toàn bộ dữ liệu?</p><p>Thao tác này sẽ xóa:</p><ul><li>Tất cả hồ sơ đã lưu</li><li>Tất cả ảnh đã chụp</li><li>Danh sách biển số</li></ul><p><b>Dữ liệu đã xóa không thể khôi phục.</b></p>','XÁC NHẬN XÓA'))return toast('Đã hủy, dữ liệu được giữ nguyên.');
+ try{await tx('pairs','readwrite',s=>s.clear());shots={1:null,2:null};slot=1;$('suf').value='';await saveDraft()}catch(e){return fail(e)}
+ await refresh();toast('Đã xóa toàn bộ dữ liệu');
+}
+
+/* ---------- Xuất ZIP ---------- */
+function download(blob,name){
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(a.href),60000);
+}
+async function exportZip(){
+ if(busy)return;
+ if(typeof JSZip==='undefined')return toast('Chưa tải được thư viện JSZip (cần Internet lần đầu mở trang). Kiểm tra mạng rồi tải lại trang.',1);
+ if(!all.length)return toast('Danh sách đang trống.',1);
+ busy=true;$('zip').disabled=true;$('clear').disabled=true;render();
+ const pg=$('pg'),msg=$('zipMsg'),total=all.length*2;pg.hidden=false;pg.value=0;
+ async function build(list,name,base,span){
+  const z=new JSZip();let n=0;
+  for(const r of list){z.file(r.plate+'-1.jpg',r.p1);z.file(r.plate+'-2.jpg',r.p2);n+=2;pg.value=base+n/(list.length*2)*span*.4;msg.textContent='Đang thêm ảnh: '+n+'/'+list.length*2}
+  const blob=await z.generateAsync({type:'blob',compression:'STORE'},m=>{pg.value=base+span*(.4+.6*m.percent/100);msg.textContent='Đang nén: '+Math.round(m.percent)+'% ('+list.length*2+' ảnh)'});
+  download(blob,name);
+ }
+ try{
+  try{await build(all,'anh_ho_so_xe.zip',0,100);msg.textContent='✔ Xong: '+total+' ảnh trong anh_ho_so_xe.zip. Dữ liệu vẫn được giữ lại.'}
+  catch(e){                                               /* thiếu RAM → tự chia nhỏ */
+   const CH=60,parts=Math.ceil(all.length/CH);msg.textContent='Một file ZIP quá lớn, chuyển sang chia '+parts+' phần…';
+   for(let p=0;p<parts;p++){await build(all.slice(p*CH,(p+1)*CH),'anh_ho_so_xe_phan'+(p+1)+'.zip',p/parts*100,100/parts);await new Promise(r=>setTimeout(r,800))}
+   msg.textContent='✔ Xong: '+total+' ảnh, chia '+parts+' file ZIP (mỗi file tối đa '+CH+' hồ sơ). Dữ liệu vẫn được giữ lại.';
+  }
+  pg.value=100;toast('✔ Xuất ZIP thành công');
+ }catch(e){msg.textContent='Xuất ZIP lỗi: '+(e.message||e);toast('Xuất ZIP thất bại. Dữ liệu vẫn còn nguyên, hãy thử lại.',1)}
+ finally{busy=false;$('zip').disabled=false;$('clear').disabled=false;render();setTimeout(()=>{if(!busy)pg.hidden=true},3000)}
+}
+
+/* ---------- Khởi tạo ---------- */
+$('pre').addEventListener('input',e=>{const v=pre();if(e.target.value!==v)e.target.value=v;saveDraft();render()});
+$('suf').addEventListener('input',e=>{const v=suf();if(e.target.value!==v)e.target.value=v;saveDraft();render()});
+$('pre').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('suf').focus()}});
+$('suf').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();snap()}});
+$('q').addEventListener('input',drawList);
+$('snap').onclick=snap;$('submit').onclick=submit;$('closeCam').onclick=()=>stopCam();
+$('flip').onclick=()=>{facing=facing==='environment'?'user':'environment';startCam()};
+$('rt1').onclick=()=>retake(1);$('rt2').onclick=()=>retake(2);
+$('zip').onclick=exportZip;$('clear').onclick=clearAll;$('vc').onclick=()=>$('vd').close();
+$('vd').addEventListener('close',()=>$('vi').querySelectorAll('img').forEach(i=>URL.revokeObjectURL(i.src)));
+$('list').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.v)view(b.dataset.v);if(b.dataset.d)del(b.dataset.d)};
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&stream){stopCam();toast('Camera đã tắt để giải phóng. Bấm CHỤP ẢNH để mở lại.')}});
+window.addEventListener('pagehide',()=>{if(stream)stream.getTracks().forEach(t=>t.stop())});
+
+(async()=>{
+ render();
+ if(!window.isSecureContext)toast('Trang chưa chạy qua HTTPS nên camera sẽ không hoạt động.',1);
+ try{db=await openDB()}catch(e){return toast('Không dùng được IndexedDB: '+(e.message||e)+'. Dữ liệu sẽ KHÔNG được lưu.',1)}
+ if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+ try{
+  const d=await tx('draft','readonly',s=>s.get('cur'));
+  if(d){$('pre').value=d.pre||'';$('suf').value=d.suf||'';shots[1]=d.p1||null;shots[2]=d.p2||null;slot=!shots[1]?1:!shots[2]?2:null;
+   if(d.p1||d.p2)toast('Đã khôi phục hồ sơ đang làm dở');}
+ }catch(e){fail(e)}
+ await refresh();
+ (pre()?$('suf'):$('pre')).focus();
+})();
+})();
+</script>
+</body>
+</html>
